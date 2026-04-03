@@ -1,0 +1,15 @@
+# Hugging Face Spaces Configuration
+title: "Incident Response Triage"
+description: "SRE/DevOps incident triage environment. AI agents classify alert severity, route to correct team, and decide on escalation."
+author: "devhemanthac"
+sdk: docker
+pinned: true
+tags:
+  - sre
+  - devops
+  - incident-response
+  - ai
+  - openai
+  - gemini
+  - openenv
+  - hackathon
