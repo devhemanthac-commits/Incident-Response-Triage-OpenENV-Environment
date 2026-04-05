@@ -1,0 +1,149 @@
+name: incident-response-triage
+version: "2.0.0"
+description: >
+  SRE/DevOps incident triage environment. An AI agent classifies alert severity,
+  routes to the correct team, decides whether to escalate, and explains its reasoning.
+  Tests real-world on-call decision-making across 18 scenarios (easy/medium/hard/false-positive).
+  Features cascading failures, time-series metrics, expert team routing, and false positive detection.
+
+domain: sre-devops
+difficulty_levels: [easy, medium, hard, false-positive]
+num_scenarios: 18
+
+observation_schema:
+  task_id: string
+  incident_id: string
+  step_number: integer
+  feedback: string
+  alert_type: string
+  service_name: string
+  error_message: string
+  metrics:
+    cpu_percent: "list[float]  # 5-point time series (T-4min to T-now)"
+    memory_percent: "list[float]"
+    error_rate: "list[float]"
+    latency_p99_ms: "list[float]"
+    disk_percent: "list[float]"
+    connections_active: "list[float]"
+    timestamps: "list[string]  # ['T-4min', 'T-3min', 'T-2min', 'T-1min', 'T-now']"
+  logs_snippet: string
+  time_of_day: string  # ISO 8601
+  related_alerts: list[string]
+  service_dependencies: list[string]
+  recent_deployments: list[object]
+  new_alert: string  # injected on cascading failure
+
+action_schema:
+  severity: "P0|P1|P2|P3|P4"
+  team: "backend|frontend|infra|database|security|network"
+  escalate: boolean
+  confidence: "float 0.0-1.0"
+  reasoning: string
+
+reward_schema:
+  score: "float 0.0-1.0 (aggregate, capped)"
+  severity_score: "float 0.0-0.35"
+  routing_score: "float 0.0-0.30  # 0.30 optimal, 0.15 alt team"
+  escalation_score: "float 0.0-0.15"
+  reasoning_score: "float 0.0-0.10"
+  calibration_score: "float 0.0-0.10"
+  cascade_penalty: "float -1.0-0.0  # -0.20 per cascade"
+  false_positive_bonus: "float 0.0-0.10"
+  trend_bonus: "float 0.0-0.05"
+  adaptation_bonus: "float 0.0-0.05"
+  feedback: string
+  learning_signals: "list[LearningSignal]  # dimension, correct, reason, improvement_hint"
+  key_insights: "list[string]  # high-level takeaways for agent improvement"
+
+learning_signal_schema:
+  dimension: "string  # severity|team_routing|escalation|reasoning_quality"
+  correct: boolean
+  reason: string
+  improvement_hint: "string  # empty if correct"
+
+grading_rubric:
+  severity:
+    weight: 0.35
+    exact_match: 0.35
+    off_by_one: 0.15
+    otherwise: 0.0
+  routing:
+    weight: 0.30
+    exact_match: 0.30
+    alt_team: 0.15  # partial credit for alternative team
+    otherwise: 0.0
+  escalation:
+    weight: 0.15
+    exact_match: 0.15
+    otherwise: 0.0
+  reasoning:
+    weight: 0.10
+    length_bonus: 0.05  # if len > 30 chars
+    indicator_bonus: 0.05  # for mentioning key indicators
+  confidence_calibration:
+    weight: 0.10
+    high_when_correct: 0.10   # confidence >= 0.75 and fully correct
+    low_when_wrong: 0.10      # confidence <= 0.50 and incorrect
+
+  # Bonus scores (capped in total at 1.0)
+  trend_analysis_bonus: 0.05  # for mentioning trends in reasoning
+  false_positive_bonus: 0.10  # for correctly triaging false positives as low-priority
+  adaptation_bonus: 0.05      # for improving from step 1 to step 2
+
+  # Penalty
+  cascade_penalty: -0.20  # per cascading failure triggered
+
+features:
+  cascading_failures:
+    description: "Mis-triaging hard scenarios triggers follow-up cascading alerts with -0.20 penalty"
+    scenarios: [INC-0011, INC-0012, INC-0013, INC-0014]
+  time_series_metrics:
+    description: "5-point time series for each metric. Agents analyzing trends earn +0.05 bonus."
+    window: "5 minutes (T-4min to T-now)"
+  false_positive_detection:
+    description: "3 scenarios where high metrics are expected behavior. +0.10 bonus for correct low-priority triage."
+    scenarios: [INC-0016, INC-0017, INC-0018]
+  expert_team_routing:
+    description: "Each scenario has optimal + alternative teams. Alt teams get 0.15 partial credit instead of 0.30."
+  multi_step_episodes:
+    description: "Max 2 attempts per episode. Consequence observations shown after step 1. Adaptation earns +0.05 bonus."
+
+endpoints:
+  - method: GET
+    path: /health
+    description: Liveness check
+  - method: POST
+    path: /reset
+    body: '{"task_id": "easy-1", "seed": 42}'
+    description: Reset environment, returns TriageObservation
+  - method: POST
+    path: /step
+    body: '{"severity": "P2", "team": "backend", "escalate": false, "confidence": 0.8, "reasoning": "..."}'
+    description: Submit triage action, returns observation/reward/done/info
+  - method: GET
+    path: /state
+    description: Return current environment state (OpenEnv spec required)
+  - method: POST
+    path: /analyze
+    body: '{"agent_name": "gpt-4", "results": [...]}'
+    description: Analyze agent performance, returns strengths/weaknesses/patterns
+  - method: GET
+    path: /consequences/<task_id>
+    description: Realistic incident timeline for correct vs wrong decisions
+
+inference:
+  stdout_protocol:
+    start: "[START]"
+    step: "[STEP] task_id=... score=... severity=... routing=... escalation=... cascade=... fp_bonus=... trend=..."
+    end: "[END] overall_avg=... episodes=..."
+  max_llm_calls: 72  # 18 scenarios × 2 attempts × 2 calls
+  reproducibility: seed=42 produces identical scores across runs
+
+docker:
+  base_image: python:3.11-slim
+  port: 5000
+  env_vars:
+    - PORT
+    - OPENAI_API_KEY
+    - API_BASE_URL
+    - MODEL_NAME
