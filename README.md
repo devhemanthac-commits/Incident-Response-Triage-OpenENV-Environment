@@ -10,72 +10,86 @@ tags:
   - openenv
 ---
 
-<p align="center">
-  <img src="https://img.shields.io/badge/OpenEnv-Incident_Response_Triage-FF6B6B?style=for-the-badge&logo=fire&logoColor=white" alt="OpenEnv Badge"/>
-</p>
+<div align="center">
 
-<h1 align="center">
-  Incident Response Triage
-</h1>
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&size=32&duration=3000&pause=1000&color=FF4444&center=true&vCenter=true&width=600&lines=🚨+Incident+Response+Triage;SRE+On-Call+Simulator;AI+Evaluation+Environment;Triage+Like+a+Pro" alt="Typing SVG" />
 
-<p align="center">
-  <em>An AI evaluation environment where agents act as SRE on-call engineers, triaging production incidents in real-time.</em>
-</p>
+<br/>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/version-2.1.0-blue?style=flat-square" alt="Version"/>
-  <img src="https://img.shields.io/badge/python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/flask-REST_API-000000?style=flat-square&logo=flask&logoColor=white" alt="Flask"/>
-  <img src="https://img.shields.io/badge/pydantic-v2-E92063?style=flat-square&logo=pydantic&logoColor=white" alt="Pydantic"/>
-  <img src="https://img.shields.io/badge/docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"/>
-  <img src="https://img.shields.io/badge/scenarios-18-green?style=flat-square" alt="Scenarios"/>
-  <img src="https://img.shields.io/badge/baseline-98.77%25-brightgreen?style=flat-square" alt="Baseline"/>
-  <img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="License"/>
-</p>
+<a href="https://huggingface.co/spaces/DeverGuy/incident-response-triage">
+  <img src="https://img.shields.io/badge/🤗%20Live%20Demo-HuggingFace%20Space-FF6B35?style=for-the-badge&logoColor=white" alt="HuggingFace Space"/>
+</a>
 
-<p align="center">
-  <a href="#-key-features">Features</a> &bull;
-  <a href="#-quick-start">Quick Start</a> &bull;
-  <a href="#-how-it-works">How It Works</a> &bull;
-  <a href="#-scenarios">Scenarios</a> &bull;
-  <a href="#-grading-rubric">Grading</a> &bull;
-  <a href="#-api-reference">API</a> &bull;
-  <a href="#-run-the-baseline-agent">Baseline Agent</a>
-</p>
+<br/><br/>
+
+<img src="https://img.shields.io/badge/version-2.1.0-blue?style=flat-square" alt="Version"/>
+<img src="https://img.shields.io/badge/python-3.11+-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python"/>
+<img src="https://img.shields.io/badge/flask-REST_API-000000?style=flat-square&logo=flask&logoColor=white" alt="Flask"/>
+<img src="https://img.shields.io/badge/pydantic-v2-E92063?style=flat-square&logo=pydantic&logoColor=white" alt="Pydantic"/>
+<img src="https://img.shields.io/badge/docker-ready-2496ED?style=flat-square&logo=docker&logoColor=white" alt="Docker"/>
+<img src="https://img.shields.io/badge/scenarios-18-brightgreen?style=flat-square" alt="Scenarios"/>
+<img src="https://img.shields.io/badge/baseline-98.77%25-brightgreen?style=flat-square" alt="Baseline"/>
+<img src="https://img.shields.io/badge/license-MIT-yellow?style=flat-square" alt="License"/>
+
+<br/><br/>
+
+<a href="#-key-features">Features</a> &nbsp;•&nbsp;
+<a href="#-live-demo">Live Demo</a> &nbsp;•&nbsp;
+<a href="#-quick-start">Quick Start</a> &nbsp;•&nbsp;
+<a href="#-how-it-works">How It Works</a> &nbsp;•&nbsp;
+<a href="#-scenarios">Scenarios</a> &nbsp;•&nbsp;
+<a href="#-grading-rubric">Grading</a> &nbsp;•&nbsp;
+<a href="#-api-reference">API</a>
+
+</div>
+
+---
+
+## 🎯 Live Demo
+
+<div align="center">
+
+> **Try it now on HuggingFace Spaces — no setup required!**
+
+[![Open in HuggingFace Spaces](https://huggingface.co/datasets/huggingface/badges/resolve/main/open-in-hf-spaces-xl-dark.svg)](https://huggingface.co/spaces/DeverGuy/incident-response-triage)
+
+**Space URL:** https://huggingface.co/spaces/DeverGuy/incident-response-triage
+
+</div>
 
 ---
 
 ## Why This Exists
 
-SRE/DevOps teams handle **thousands of alerts daily**. The core skill is deceptively hard: given raw metrics, logs, and context, an engineer must correctly classify severity, route to the right team, decide on escalation, and articulate reasoning -- all under time pressure.
+SRE/DevOps teams handle **thousands of alerts daily**. The core skill is deceptively hard: given raw metrics, logs, and context, an engineer must correctly classify severity, route to the right team, decide on escalation, and articulate reasoning — all under time pressure.
 
 This environment captures that decision-making loop. A strong agent here transfers directly to **on-call automation tooling** used in production.
 
 ```
-  Alert Fires ──> Agent Observes ──> Agent Triages ──> Environment Grades
-       ^                                                       |
-       |              (max 2 attempts per episode)             |
-       └───────────────── Feedback Loop ───────────────────────┘
+  Alert Fires ──▶ Agent Observes ──▶ Agent Triages ──▶ Environment Grades
+       ▲                                                        │
+       │               (max 2 attempts per episode)             │
+       └────────────────── Feedback Loop ──────────────────────┘
 ```
 
 ---
 
-## Key Features
+## ✨ Key Features
 
 <table>
 <tr>
 <td width="50%">
 
-### Cascading Failures
-Mis-triaging hard scenarios triggers **follow-up cascading alerts** -- just like production. DB pool exhaustion leads to payment API crash. DNS failure causes total platform outage.
+### 💥 Cascading Failures
+Mis-triaging hard scenarios triggers **follow-up cascading alerts** — just like production. DB pool exhaustion leads to payment API crash. DNS failure causes total platform outage.
 
 Each cascade applies a **`-0.20` penalty**. Wrong routing has real consequences.
 
 </td>
 <td width="50%">
 
-### Time-Series Metrics
-Each metric is a **5-point time series** (last 5 minutes) instead of a single snapshot. Agents must distinguish **trends** (memory leak: 60% -> 78%) from **spikes** (transient CPU burst).
+### 📈 Time-Series Metrics
+Each metric is a **5-point time series** (last 5 minutes) instead of a single snapshot. Agents must distinguish **trends** (memory leak: 60% → 78%) from **spikes** (transient CPU burst).
 
 **`+0.05` bonus** for reasoning that references trends.
 
@@ -84,7 +98,7 @@ Each metric is a **5-point time series** (last 5 minutes) instead of a single sn
 <tr>
 <td width="50%">
 
-### False Positive Detection
+### 🐺 False Positive Detection
 3 "boy who cried wolf" scenarios: nightly backups, staging load tests, canary deployments. High metrics that are **expected behavior**.
 
 **`+0.10` bonus** for correctly triaging as low-priority despite alarming numbers.
@@ -92,17 +106,17 @@ Each metric is a **5-point time series** (last 5 minutes) instead of a single sn
 </td>
 <td width="50%">
 
-### Expert Team Routing
+### 🎯 Expert Team Routing
 Each scenario has an **optimal team** + **alternative teams**. Routing to an alt team earns partial credit (`0.15` vs `0.30`). Wrong team = `0.0`.
 
-The right team is critical -- wrong routing wastes response time.
+The right team is critical — wrong routing wastes response time.
 
 </td>
 </tr>
 <tr>
 <td colspan="2" align="center">
 
-### Multi-Step Episodes with Adaptation
+### 🔄 Multi-Step Episodes with Adaptation
 Max **2 attempts** per episode. After step 1, the agent sees consequence observations (e.g., *"Escalation team found DB at connection limit"*). Agents that **adapt** their answer based on feedback earn a **`+0.05` bonus**.
 
 </td>
@@ -111,9 +125,20 @@ Max **2 attempts** per episode. After step 1, the agent sees consequence observa
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
-### Local Setup
+### Option 1 — HuggingFace Space (Zero Setup)
+
+**Just visit:** https://huggingface.co/spaces/DeverGuy/incident-response-triage
+
+The API is live and ready. Hit `/health` to confirm:
+
+```bash
+curl https://deverguy-incident-response-triage.hf.space/health
+# {"status": "ok"}
+```
+
+### Option 2 — Local Setup
 
 ```bash
 # Clone the repository
@@ -128,7 +153,7 @@ python app.py
 # Server running on http://localhost:5000
 ```
 
-### Docker
+### Option 3 — Docker
 
 ```bash
 docker build -t incident-triage .
@@ -161,14 +186,14 @@ curl -s -X POST http://localhost:5000/step \
 
 ---
 
-## How It Works
+## ⚙️ How It Works
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                        EPISODE LIFECYCLE                            │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
-│   POST /reset {"task_id": "hard-1"}                                │
+│   POST /reset {"task_id": "hard-1"}                                 │
 │        │                                                            │
 │        ▼                                                            │
 │   ┌──────────────────────────────────────────┐                     │
@@ -217,7 +242,7 @@ curl -s -X POST http://localhost:5000/step \
 
 ---
 
-## Scenarios
+## 🗺️ Scenarios
 
 ### 18 Scenarios Across 4 Difficulty Tiers
 
@@ -230,32 +255,32 @@ curl -s -X POST http://localhost:5000/step \
 </tr>
 <tr>
 <td><img src="https://img.shields.io/badge/-EASY-2ECC71?style=flat-square" alt="Easy"/></td>
-<td>5</td>
-<td>~0.90</td>
+<td align="center">5</td>
+<td align="center">~0.90</td>
 <td>Clear single-signal alerts</td>
 </tr>
 <tr>
 <td><img src="https://img.shields.io/badge/-MEDIUM-F39C12?style=flat-square" alt="Medium"/></td>
-<td>5</td>
-<td>~0.75</td>
+<td align="center">5</td>
+<td align="center">~0.75</td>
 <td>Ambiguous context, deploy red herrings</td>
 </tr>
 <tr>
 <td><img src="https://img.shields.io/badge/-HARD-E74C3C?style=flat-square" alt="Hard"/></td>
-<td>5</td>
-<td>~0.65</td>
+<td align="center">5</td>
+<td align="center">~0.65</td>
 <td>Cascading failures, misleading correlations</td>
 </tr>
 <tr>
 <td><img src="https://img.shields.io/badge/-FALSE_POSITIVE-9B59B6?style=flat-square" alt="FP"/></td>
-<td>3</td>
-<td>~0.85</td>
+<td align="center">3</td>
+<td align="center">~0.85</td>
 <td>Expected behavior disguised as alerts</td>
 </tr>
 </table>
 
 <details>
-<summary><b>Easy Scenarios (5)</b></summary>
+<summary><b>🟢 Easy Scenarios (5)</b></summary>
 
 | ID | Incident | Alert Type | Service | Expected |
 |---|---|---|---|---|
@@ -268,7 +293,7 @@ curl -s -X POST http://localhost:5000/step \
 </details>
 
 <details>
-<summary><b>Medium Scenarios (5)</b></summary>
+<summary><b>🟡 Medium Scenarios (5)</b></summary>
 
 | ID | Incident | Alert Type | Service | Expected |
 |---|---|---|---|---|
@@ -281,7 +306,7 @@ curl -s -X POST http://localhost:5000/step \
 </details>
 
 <details>
-<summary><b>Hard Scenarios (5) -- with Cascading Failures</b></summary>
+<summary><b>🔴 Hard Scenarios (5) — with Cascading Failures</b></summary>
 
 | ID | Incident | Real Cause | Cascade Effect |
 |---|---|---|---|
@@ -294,7 +319,7 @@ curl -s -X POST http://localhost:5000/step \
 </details>
 
 <details>
-<summary><b>False Positive Scenarios (3)</b></summary>
+<summary><b>🟣 False Positive Scenarios (3)</b></summary>
 
 | ID | Incident | What It Looks Like | What It Actually Is |
 |---|---|---|---|
@@ -306,7 +331,7 @@ curl -s -X POST http://localhost:5000/step \
 
 ---
 
-## Grading Rubric
+## 📊 Grading Rubric
 
 ### Base Scoring (1.00 max)
 
@@ -339,7 +364,7 @@ Final score capped to [0.0, 1.0]
 
 ---
 
-## Observation Schema
+## 📡 Observation Schema
 
 The agent receives this observation on each step:
 
@@ -370,7 +395,7 @@ The agent receives this observation on each step:
 }
 ```
 
-## Action Schema
+## 🎬 Action Schema
 
 The agent must return:
 
@@ -388,23 +413,21 @@ The agent must return:
 
 | Level | Meaning | Example |
 |---|---|---|
-| **P0** | Complete outage / active security breach | 100% error rate, crypto-mining |
-| **P1** | Major degradation / data at risk | DB pool exhaustion, SSL expired |
-| **P2** | Significant impact / SLO breach | Disk full, post-deploy errors |
-| **P3** | Minor degradation / warning threshold | Memory leak (early), single pod issue |
-| **P4** | Informational / expected behavior | Nightly backup, staging load test |
+| **P0** 🔴 | Complete outage / active security breach | 100% error rate, crypto-mining |
+| **P1** 🟠 | Major degradation / data at risk | DB pool exhaustion, SSL expired |
+| **P2** 🟡 | Significant impact / SLO breach | Disk full, post-deploy errors |
+| **P3** 🔵 | Minor degradation / warning threshold | Memory leak (early), single pod issue |
+| **P4** 🟢 | Informational / expected behavior | Nightly backup, staging load test |
 
 ---
 
-## API Reference
+## 🔌 API Reference
 
 ### `GET /health`
 
 ```bash
 curl http://localhost:5000/health
-```
-```json
-{"status": "ok"}
+# {"status": "ok"}
 ```
 
 ### `POST /reset`
@@ -475,11 +498,11 @@ curl -X POST http://localhost:5000/step \
 }
 ```
 
-> **Note:** Ground truth (`expected_severity`, `expected_team`, `expected_escalate`) is only revealed in `info` after `done = true`.
+> **Note:** Ground truth is only revealed in `info` after `done = true`.
 
 ---
 
-## Run the Baseline Agent
+## 🤖 Run the Baseline Agent
 
 The included `inference.py` supports **OpenAI** and **Google Gemini** via OpenAI-compatible endpoints.
 
@@ -513,11 +536,11 @@ export MOCK_LLM=true
 python inference.py
 ```
 
-Uses a seeded RNG (`seed=42`) for reproducible random decisions -- useful for testing the pipeline end-to-end without API costs.
+Uses a seeded RNG (`seed=42`) for reproducible random decisions — useful for testing the pipeline end-to-end without API costs.
 
 ---
 
-## Run the Deterministic Test Agent
+## 🧪 Run the Deterministic Test Agent
 
 `test_agent.py` contains **hardcoded optimal decisions** for all 18 scenarios. No LLM needed.
 
@@ -532,7 +555,7 @@ python test_agent.py
 **Expected output:**
 ```
 ====================================================================================================
-MOCK AGENT TEST -- 18 SCENARIOS
+MOCK AGENT TEST — 18 SCENARIOS
 ====================================================================================================
 
 [EASY]
@@ -540,9 +563,9 @@ MOCK AGENT TEST -- 18 SCENARIOS
   easy-2               INC-0002   score=0.983 PASS     ...
   GROUP AVG: 0.988
 
-[MEDIUM]   GROUP AVG: 0.975
-[HARD]     GROUP AVG: 0.993
-[FALSE-POSITIVE]  GROUP AVG: 1.000
+[MEDIUM]         GROUP AVG: 0.975
+[HARD]           GROUP AVG: 0.993
+[FALSE-POSITIVE] GROUP AVG: 1.000
 
 ====================================================================================================
 OVERALL AVG: 0.9877 (18 scenarios)
@@ -551,7 +574,7 @@ OVERALL AVG: 0.9877 (18 scenarios)
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 .
@@ -566,7 +589,6 @@ OVERALL AVG: 0.9877 (18 scenarios)
 ├── openenv.yaml           # OpenEnv specification (v2.0.0)
 ├── requirements.txt       # Python dependencies
 ├── Dockerfile             # Production container image
-├── log.md                 # Development & testing log
 └── STATUS.md              # Project status report
 ```
 
@@ -593,7 +615,7 @@ OVERALL AVG: 0.9877 (18 scenarios)
 
 ---
 
-## Verification & Testing
+## ✅ Verification & Testing
 
 ```bash
 # 1. Import check
@@ -616,21 +638,30 @@ python test_agent.py && python test_agent.py && python test_agent.py
 
 ---
 
-## Baseline Results
+## 🏆 Baseline Results
 
 > Mock agent with hardcoded optimal decisions (no LLM)
 
 | Tier | Avg Score | Perfect Scores | Status |
 |---|---|---|---|
-| Easy (5) | **0.988** | 2/5 | Excellent |
-| Medium (5) | **0.975** | 1/5 | Excellent |
-| Hard (5) | **0.993** | 3/5 | Near-Perfect |
-| False-Positive (3) | **1.000** | 3/3 | Perfect |
+| 🟢 Easy (5) | **0.988** | 2/5 | Excellent |
+| 🟡 Medium (5) | **0.975** | 1/5 | Excellent |
+| 🔴 Hard (5) | **0.993** | 3/5 | Near-Perfect |
+| 🟣 False-Positive (3) | **1.000** | 3/3 | Perfect |
 | **Overall (18)** | **0.9877** | **10/18** | **Production-Ready** |
+
+<div align="center">
+
+![Easy](https://progress-bar.xyz/99/?title=Easy&width=300&color=2ECC71)
+![Medium](https://progress-bar.xyz/98/?title=Medium&width=300&color=F39C12)
+![Hard](https://progress-bar.xyz/99/?title=Hard&width=300&color=E74C3C)
+![False+Positive](https://progress-bar.xyz/100/?title=False+Positive&width=300&color=9B59B6)
+
+</div>
 
 ---
 
-## Tech Stack
+## 🛠️ Tech Stack
 
 | Component | Technology |
 |---|---|
@@ -640,14 +671,15 @@ python test_agent.py && python test_agent.py && python test_agent.py
 | LLM Client | OpenAI SDK (compatible with Gemini) |
 | Containerization | Docker (python:3.11-slim) |
 | Reproducibility | Deterministic seeding (seed=42) |
+| Hosting | HuggingFace Spaces |
 
 ---
 
-## Research Value
+## 📈 Research Value
 
 ### Pedagogical Excellence
 
-This environment doesn't just grade agents—it **teaches them**. Advanced learning features:
+This environment doesn't just grade agents — it **teaches them**:
 
 - **Structured Learning Signals**: Each decision receives detailed feedback explaining why it was right/wrong
 - **Improvement Tracking**: Agents improve measurably from step 1 to step 2 (20-30% on average)
@@ -661,7 +693,7 @@ This environment doesn't just grade agents—it **teaches them**. Advanced learn
     {
       "dimension": "severity",
       "correct": true,
-      "reason": "Correctly identified P2. Analyzed metrics appropriately.",
+      "reason": "Correctly identified P2.",
       "improvement_hint": ""
     },
     {
@@ -677,72 +709,31 @@ This environment doesn't just grade agents—it **teaches them**. Advanced learn
 }
 ```
 
-### Advanced Analytics
+### Advanced Analytics — `POST /analyze`
 
-**New Endpoint:** `POST /analyze`
-
-Comprehensive agent profiling that reveals:
-- Performance by decision dimension (severity, routing, escalation, reasoning)
-- Strengths: "Excellent false positive detection (+0.10 bonus)"
-- Weaknesses: "Inconsistent on escalation decisions (70% accuracy)"
-- Learning patterns: Adaptation rate from step 1 to step 2
+Comprehensive agent profiling:
+- Performance by decision dimension
+- Strengths & weaknesses report
+- Learning patterns and adaptation rate
 
 ```bash
 curl -X POST http://localhost:5000/analyze \
   -H "Content-Type: application/json" \
-  -d '{
-    "agent_name": "gpt-4",
-    "results": [{"task_id": "easy-1", "reward": {...}}, ...]
-  }'
+  -d '{"agent_name": "gpt-4", "results": [...]}'
 ```
 
-**Returns insights like:**
-```json
-{
-  "agent_name": "gpt-4",
-  "overall": {
-    "average_score": 0.948,
-    "min_score": 0.65,
-    "max_score": 1.0
-  },
-  "strengths": [
-    "Excellent accuracy on severity, routing",
-    "Strong false positive detection"
-  ],
-  "weaknesses": [
-    "Inconsistent on escalation decisions"
-  ],
-  "by_difficulty": {
-    "easy": {"avg_score": 0.85, "scenarios_completed": 5},
-    "medium": {"avg_score": 0.95, "scenarios_completed": 5},
-    "hard": {"avg_score": 0.99, "scenarios_completed": 5}
-  }
-}
-```
+### Real-World Consequence Timelines — `GET /consequences/<task_id>`
 
-### Real-World Impact: Consequence Timelines
-
-**New Endpoint:** `GET /consequences/<task_id>`
-
-Shows **realistic incident timelines** and costs of different triage decisions:
-
-```bash
-curl http://localhost:5000/consequences/easy-1
-```
+Shows **realistic incident timelines** and costs of different triage decisions.
 
 **Example:** For disk full scenario:
-- **Correct (P2 → database team)**: Resolves in 8 minutes, $0 cost
-- **Wrong team (infra team)**: 13 minute resolution, $1,400 customer impact
-- **Over-escalation**: 8 min resolution but $200 oncall fatigue cost
-
-This demonstrates **why good triage matters**:
-- Correct routing saves exponential time
-- Escalation decisions have real SRE burnout cost
-- False positives accumulate operational overhead
+- ✅ **Correct (P2 → database team)**: Resolves in 8 minutes, $0 cost
+- ❌ **Wrong team (infra team)**: 13 minute resolution, $1,400 customer impact
+- ⚠️ **Over-escalation**: 8 min resolution but $200 oncall fatigue cost
 
 ---
 
-## Comparative Benchmarks
+## 📊 Comparative Benchmarks
 
 | Model | Easy | Medium | Hard | F.P. | Overall |
 |-------|------|--------|------|------|---------|
@@ -751,66 +742,21 @@ This demonstrates **why good triage matters**:
 | Gemini Pro | 78% | 89% | 95% | 96% | **89.1%** |
 
 **Key Findings:**
-- All models struggle with **cascading failure prediction** (12-15% error rate)
+- All models struggle with **cascading failure prediction** (12–15% error rate)
 - GPT-4 excels at **false positive detection** (100% on scheduled events)
-- Escalation is **hardest dimension** (70-85% accuracy across all models)
+- Escalation is **hardest dimension** (70–85% accuracy across all models)
 - Models show **30%+ improvement** from step 1 to step 2 when given consequence feedback
 
 ---
 
-## Getting Started with Advanced Features
+<div align="center">
 
-### 1. Collect Agent Results
+### 🚨 Try It Live
 
-Run your agent and save results:
-```bash
-OPENAI_API_KEY=sk-... python inference.py > results.json
-```
+[![HuggingFace Space](https://img.shields.io/badge/🤗%20Open%20Space-DeverGuy%2Fincident--response--triage-FF6B35?style=for-the-badge)](https://huggingface.co/spaces/DeverGuy/incident-response-triage)
 
-### 2. Analyze Performance
+[![GitHub](https://img.shields.io/badge/GitHub-Source_Code-181717?style=for-the-badge&logo=github)](https://github.com/devhemanthac-commits/Incident-Response-Triage-OpenENV-Environment)
 
-```python
-import json
-import requests
+<sub>Built for the <b>OpenEnv Competition</b> — testing AI agents on real-world SRE incident triage.</sub>
 
-with open('results.json') as f:
-    results = json.load(f)
-
-analysis = requests.post('http://localhost:5000/analyze', json={
-    "agent_name": "gpt-4",
-    "results": results
-})
-
-print(analysis.json())
-```
-
-### 3. Explore Consequences
-
-```bash
-# See why decision quality matters
-curl http://localhost:5000/consequences/hard-1
-```
-
----
-
-## Domain Expertise
-
-This environment reflects **real SRE decision-making**:
-
-- **18 scenarios** based on actual incident patterns
-- **Cascading failures** model real-world dependencies (DB → payment API → customer impact)
-- **Team routing** reflects actual skill boundaries (database team vs infrastructure team vs backend)
-- **Time-series metrics** require trend analysis, not snapshot reading
-- **False positive detection** teaches recognition of expected behavior
-
-**Research Application:** Use this environment to:
-- Benchmark LLM decision-making across domains
-- Study how agents learn from structured feedback
-- Analyze team routing accuracy and root cause identification
-- Evaluate escalation judgment in uncertain situations
-
----
-
-<p align="center">
-  <sub>Built for the <b>OpenEnv Competition</b> -- testing AI agents on real-world SRE incident triage.</sub>
-</p>
+</div>
