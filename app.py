@@ -21,6 +21,24 @@ def _get_env(session_id: str | None = None) -> IncidentTriageEnv:
     return _sessions[sid]
 
 
+@app.get("/")
+def index():
+    return jsonify({
+        "name": "Incident Response Triage",
+        "version": "2.1.0",
+        "status": "ok",
+        "endpoints": {
+            "GET  /health": "Health check",
+            "POST /reset": "Start a new episode (body: {task_id, seed, session_id})",
+            "POST /step": "Submit a triage action (body: {severity, team, escalate, confidence, reasoning})",
+            "POST /analyze": "Analyze agent performance",
+            "GET  /consequences/<task_id>": "Get consequence timelines for a scenario",
+            "GET  /consequences": "List all consequence timelines",
+            "GET  /state": "Get current environment state",
+        }
+    })
+
+
 @app.get("/health")
 def health():
     return jsonify({"status": "ok"})
