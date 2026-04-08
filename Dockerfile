@@ -5,7 +5,7 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY models.py data.py environment.py app.py inference.py openenv.yaml README.md analytics.py consequences.py ./
+COPY models.py data.py environment.py app.py inference.py openenv.yaml README.md analytics.py consequences.py index.html ./
 
 ENV PORT=5000
 EXPOSE 5000

@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Incident Response Triage — OpenEnv</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:#f8f9fa;color:#1a1a2e;line-height:1.6}
+a{color:#e74c3c;text-decoration:none}
+code,pre{font-family:'JetBrains Mono',monospace}
+
+/* Layout */
+.container{max-width:1100px;margin:0 auto;padding:0 24px}
+section{padding:64px 0}
+section:nth-child(even){background:#fff}
+
+/* Hero */
+.hero{background:linear-gradient(135deg,#1a1a2e 0%,#16213e 60%,#0f3460 100%);color:#fff;padding:80px 0 64px}
+.hero h1{font-size:2.8rem;font-weight:700;letter-spacing:-0.5px;margin-bottom:12px}
+.hero h1 span{color:#e74c3c}
+.hero p.tagline{font-size:1.15rem;color:#a0aec0;margin-bottom:32px;max-width:600px}
+.badges{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:28px}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:5px 14px;font-size:0.82rem;font-weight:500;color:#e2e8f0}
+.badge.red{background:rgba(231,76,60,0.15);border-color:rgba(231,76,60,0.4);color:#fc8181}
+.health-pill{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:20px;padding:6px 16px;font-size:0.84rem;color:#a0aec0}
+.health-dot{width:8px;height:8px;border-radius:50%;background:#718096}
+.health-dot.green{background:#48bb78;box-shadow:0 0 6px #48bb78}
+.health-dot.red{background:#fc8181}
+
+/* Section headings */
+.section-title{font-size:1.65rem;font-weight:700;margin-bottom:8px;color:#1a1a2e}
+.section-sub{color:#718096;margin-bottom:36px;font-size:0.97rem}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 24px;border-radius:8px;font-size:0.95rem;font-weight:600;cursor:pointer;border:none;transition:all 0.15s}
+.btn-primary{background:#e74c3c;color:#fff}
+.btn-primary:hover{background:#c0392b}
+.btn-secondary{background:#fff;color:#1a1a2e;border:1.5px solid #e2e8f0}
+.btn-secondary:hover{border-color:#cbd5e0;background:#f7fafc}
+.btn:disabled{opacity:0.55;cursor:not-allowed}
+
+/* Cards */
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:24px}
+.card-shadow{box-shadow:0 1px 3px rgba(0,0,0,0.06),0 4px 16px rgba(0,0,0,0.04)}
+
+/* Quick Demo */
+.demo-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+@media(max-width:720px){.demo-wrap{grid-template-columns:1fr}}
+.demo-info h3{font-size:1.1rem;font-weight:600;margin-bottom:8px}
+.demo-info p{color:#4a5568;font-size:0.93rem;margin-bottom:20px}
+.scenario-tag{display:inline-block;background:#ebf8ff;color:#2b6cb0;border-radius:6px;padding:3px 10px;font-size:0.8rem;font-weight:600;margin-bottom:12px}
+.score-card{border-radius:12px;border:1px solid #e2e8f0;overflow:hidden}
+.score-header{background:#1a1a2e;color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center}
+.score-header .incident{font-size:0.82rem;color:#a0aec0}
+.score-header .total{font-size:2rem;font-weight:700;color:#48bb78}
+.score-body{padding:16px 20px}
+.dim-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dim-label{font-size:0.78rem;color:#718096;width:90px;flex-shrink:0}
+.dim-bar-bg{flex:1;height:7px;background:#edf2f7;border-radius:4px;overflow:hidden}
+.dim-bar{height:100%;border-radius:4px;background:#48bb78;transition:width 0.6s ease}
+.dim-val{font-size:0.78rem;font-weight:600;color:#2d3748;width:36px;text-align:right}
+.feedback-box{margin-top:12px;padding:10px 14px;background:#f0fff4;border-left:3px solid #48bb78;border-radius:0 6px 6px 0;font-size:0.83rem;color:#276749}
+.placeholder-card{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:200px;border:2px dashed #e2e8f0;border-radius:12px;color:#a0aec0;font-size:0.9rem;gap:8px}
+
+/* Interactive Triage */
+.triage-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+@media(max-width:800px){.triage-grid{grid-template-columns:1fr}}
+label{display:block;font-size:0.82rem;font-weight:600;color:#4a5568;margin-bottom:6px}
+select,textarea{width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:0.93rem;font-family:inherit;color:#2d3748;background:#fff;outline:none;transition:border 0.15s}
+select:focus,textarea:focus{border-color:#e74c3c}
+textarea{resize:vertical;min-height:90px}
+.pill-group{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.pill{padding:6px 14px;border-radius:20px;font-size:0.83rem;font-weight:600;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;color:#4a5568;transition:all 0.12s}
+.pill.active{background:#e74c3c;border-color:#e74c3c;color:#fff}
+.pill.team.active{background:#2b6cb0;border-color:#2b6cb0;color:#fff}
+.toggle-pair{display:flex;gap:8px;margin-bottom:16px}
+.toggle-btn{flex:1;padding:8px;border-radius:8px;font-size:0.87rem;font-weight:600;cursor:pointer;border:1.5px solid #e2e8f0;background:#fff;color:#4a5568;transition:all 0.12s;text-align:center}
+.toggle-btn.active{background:#48bb78;border-color:#48bb78;color:#fff}
+.toggle-btn.no.active{background:#fc8181;border-color:#fc8181;color:#fff}
+.slider-wrap{margin-bottom:16px}
+.slider-wrap input[type=range]{width:100%;accent-color:#e74c3c}
+.slider-val{font-weight:700;color:#e74c3c;font-size:1rem}
+.obs-card{background:#1a1a2e;color:#e2e8f0;border-radius:12px;padding:20px;font-size:0.85rem;line-height:1.7}
+.obs-card .obs-title{font-size:0.75rem;font-weight:700;color:#fc8181;letter-spacing:1px;margin-bottom:12px;text-transform:uppercase}
+.obs-field{margin-bottom:8px}
+.obs-field strong{color:#a0aec0;font-size:0.78rem}
+.obs-field .val{color:#fff;font-family:'JetBrains Mono',monospace;font-size:0.82rem}
+.metrics-table{width:100%;border-collapse:collapse;margin:10px 0;font-size:0.78rem}
+.metrics-table th{color:#a0aec0;text-align:left;padding:2px 6px;font-weight:500}
+.metrics-table td{color:#e2e8f0;padding:2px 6px;font-family:'JetBrains Mono',monospace}
+.logs-pre{background:rgba(0,0,0,0.3);border-radius:6px;padding:10px;font-size:0.75rem;color:#68d391;overflow-x:auto;margin:6px 0;white-space:pre-wrap;word-break:break-all}
+.obs-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px;background:#1a1a2e;border-radius:12px;color:#4a5568;font-size:0.88rem;gap:6px}
+.result-card{margin-top:20px;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0}
+.result-card .score-header{padding:14px 20px}
+
+/* Features */
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.feature-card{border:1px solid #e2e8f0;border-radius:12px;padding:22px;background:#fff}
+.feature-icon{font-size:1.6rem;margin-bottom:10px}
+.feature-card h3{font-size:1rem;font-weight:700;margin-bottom:6px;color:#1a1a2e}
+.feature-card p{font-size:0.88rem;color:#718096;line-height:1.6}
+.bonus-tag{display:inline-block;background:#f0fff4;color:#276749;border-radius:4px;padding:2px 8px;font-size:0.76rem;font-weight:700;margin-top:8px}
+.penalty-tag{display:inline-block;background:#fff5f5;color:#c53030;border-radius:4px;padding:2px 8px;font-size:0.76rem;font-weight:700;margin-top:8px}
+
+/* Rubric */
+.rubric-table{width:100%;border-collapse:collapse;font-size:0.88rem}
+.rubric-table th{background:#1a1a2e;color:#fff;padding:10px 14px;text-align:left;font-weight:600}
+.rubric-table td{padding:10px 14px;border-bottom:1px solid #edf2f7;color:#2d3748}
+.rubric-table tr:last-child td{border-bottom:none}
+.rubric-table tr:nth-child(even) td{background:#f7fafc}
+.weight{font-weight:700;color:#e74c3c}
+.bonus{color:#276749;font-weight:700}
+.penalty{color:#c53030;font-weight:700}
+
+/* Files */
+.file-tree{background:#1a1a2e;border-radius:12px;padding:24px;font-family:'JetBrains Mono',monospace;font-size:0.85rem}
+.file-tree .tree-header{color:#a0aec0;font-size:0.75rem;letter-spacing:1px;text-transform:uppercase;margin-bottom:16px}
+.file-row{display:flex;align-items:baseline;gap:12px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.file-row:last-child{border-bottom:none}
+.file-name{color:#68d391;min-width:200px}
+.file-desc{color:#718096;font-size:0.78rem;font-family:'Inter',sans-serif}
+
+/* API */
+.api-grid{display:grid;gap:16px}
+.api-card{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fff}
+.api-card-header{display:flex;align-items:center;gap:12px;padding:12px 18px;background:#f7fafc;border-bottom:1px solid #e2e8f0}
+.method{font-family:'JetBrains Mono',monospace;font-size:0.78rem;font-weight:700;padding:3px 8px;border-radius:4px}
+.method.get{background:#ebf8ff;color:#2b6cb0}
+.method.post{background:#fff5f5;color:#c53030}
+.api-path{font-family:'JetBrains Mono',monospace;font-size:0.9rem;font-weight:600;color:#1a1a2e}
+.api-desc{color:#718096;font-size:0.83rem;margin-left:auto}
+.api-card-body{padding:14px 18px}
+.api-card-body pre{background:#1a1a2e;color:#68d391;border-radius:8px;padding:12px 14px;font-size:0.78rem;overflow-x:auto;white-space:pre-wrap;word-break:break-all}
+
+/* Footer */
+footer{background:#1a1a2e;color:#a0aec0;text-align:center;padding:32px 24px;font-size:0.85rem}
+footer a{color:#fc8181}
+
+/* Spinner */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,0.3);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Alerts */
+.alert{padding:10px 14px;border-radius:8px;font-size:0.85rem;margin-top:12px}
+.alert.error{background:#fff5f5;border-left:3px solid #fc8181;color:#c53030}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════ HERO ═══════════════════════════════════════ -->
+<section class="hero">
+<div class="container">
+  <h1>🚨 Incident Response <span>Triage</span></h1>
+  <p class="tagline">SRE on-call simulator for AI agents. Classify severity, route to the right team, decide escalation — under time pressure, across 18 real-world scenarios.</p>
+  <div class="badges">
+    <span class="badge red">🔴 OpenEnv Competition</span>
+    <span class="badge">📋 18 Scenarios</span>
+    <span class="badge">🎯 98.77% Baseline</span>
+    <span class="badge">🐳 Docker Ready</span>
+    <span class="badge">⚡ Flask REST API</span>
+    <span class="badge">🐍 Python 3.11</span>
+  </div>
+  <div class="health-pill">
+    <span class="health-dot" id="healthDot"></span>
+    <span id="healthText">Checking API status...</span>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════ QUICK DEMO ═══════════════════════════════════════ -->
+<section style="background:#fff">
+<div class="container">
+  <h2 class="section-title">⚡ Quick Demo</h2>
+  <p class="section-sub">One click — fires a real API call and shows the live graded result.</p>
+  <div class="demo-wrap">
+    <div class="demo-info card card-shadow">
+      <span class="scenario-tag">easy-1 · INC-0001</span>
+      <h3>Disk Full on postgres-primary</h3>
+      <p>The optimal triage: <strong>P2 severity → database team → no escalation</strong>. Disk trending 88% → 95% over 5 minutes. Click to see the grading engine score this decision live.</p>
+      <button class="btn btn-primary" id="demoBtn" onclick="runDemo()">▶ Run Demo</button>
+    </div>
+    <div id="demoResult">
+      <div class="placeholder-card">
+        <span style="font-size:2rem">🎯</span>
+        <span>Score card will appear here</span>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════ INTERACTIVE TRIAGE ═══════════════════════════════════════ -->
+<section>
+<div class="container">
+  <h2 class="section-title">🧑‍💻 Interactive Triage</h2>
+  <p class="section-sub">Pick any scenario, load it, and submit your own triage decision against the live grading engine.</p>
+
+  <!-- Scenario selector -->
+  <div style="display:flex;gap:12px;align-items:flex-end;margin-bottom:28px;flex-wrap:wrap">
+    <div style="flex:1;min-width:200px">
+      <label for="scenarioPicker">Scenario</label>
+      <select id="scenarioPicker">
+        <optgroup label="Easy">
+          <option value="easy-1">easy-1 · Disk Full (postgres-primary)</option>
+          <option value="easy-2">easy-2 · 5xx Errors (payment-api)</option>
+          <option value="easy-3">easy-3 · SSL Cert Expiry (cdn-edge)</option>
+          <option value="easy-4">easy-4 · CPU Spike (user-auth)</option>
+          <option value="easy-5">easy-5 · Brute Force (user-auth)</option>
+        </optgroup>
+        <optgroup label="Medium">
+          <option value="medium-1">medium-1 · 5xx Errors (checkout-service)</option>
+          <option value="medium-2">medium-2 · Memory Leak (recommendation-engine)</option>
+          <option value="medium-3">medium-3 · Slow Queries (postgres-primary)</option>
+          <option value="medium-4">medium-4 · Packet Loss (service-mesh)</option>
+          <option value="medium-5">medium-5 · Stale Cache (cdn-edge)</option>
+        </optgroup>
+        <optgroup label="Hard — Cascading Failures">
+          <option value="hard-1">hard-1 · DB Pool Exhaustion → Payment Crash</option>
+          <option value="hard-2">hard-2 · DNS Failure → Platform Outage</option>
+          <option value="hard-3">hard-3 · Crypto-Mining Malware</option>
+          <option value="hard-4">hard-4 · Shared Library Memory Leak</option>
+          <option value="hard-5">hard-5 · Upstream Stripe Outage</option>
+        </optgroup>
+        <optgroup label="False Positive">
+          <option value="false-positive-1">false-positive-1 · Nightly Backup (memory spike)</option>
+          <option value="false-positive-2">false-positive-2 · Staging Load Test (CPU 90%)</option>
+          <option value="false-positive-3">false-positive-3 · Canary Deploy (5% errors)</option>
+        </optgroup>
+      </select>
+    </div>
+    <button class="btn btn-secondary" id="loadBtn" onclick="loadScenario()">Load Scenario →</button>
+  </div>
+
+  <div class="triage-grid">
+    <!-- Left: Observation -->
+    <div>
+      <div id="obsPanel">
+        <div class="obs-placeholder">
+          <span style="font-size:2rem">📡</span>
+          <span>Load a scenario to see the observation</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: Action form -->
+    <div>
+      <div class="card card-shadow" style="padding:24px">
+        <h3 style="font-size:1rem;font-weight:700;margin-bottom:20px;color:#1a1a2e">Triage Decision</h3>
+
+        <label>Severity</label>
+        <div class="pill-group" id="severityGroup">
+          <button class="pill" onclick="setSeverity('P0')">P0 🔴</button>
+          <button class="pill" onclick="setSeverity('P1')">P1 🟠</button>
+          <button class="pill active" onclick="setSeverity('P2')">P2 🟡</button>
+          <button class="pill" onclick="setSeverity('P3')">P3 🔵</button>
+          <button class="pill" onclick="setSeverity('P4')">P4 🟢</button>
+        </div>
+
+        <label>Team</label>
+        <div class="pill-group" id="teamGroup">
+          <button class="pill team" onclick="setTeam('backend')">backend</button>
+          <button class="pill team" onclick="setTeam('frontend')">frontend</button>
+          <button class="pill team" onclick="setTeam('infra')">infra</button>
+          <button class="pill team active" onclick="setTeam('database')">database</button>
+          <button class="pill team" onclick="setTeam('security')">security</button>
+          <button class="pill team" onclick="setTeam('network')">network</button>
+        </div>
+
+        <label>Escalate?</label>
+        <div class="toggle-pair">
+          <button class="toggle-btn no" id="escNo" onclick="setEscalate(false)">No</button>
+          <button class="toggle-btn active" id="escYes" onclick="setEscalate(true)">Yes</button>
+        </div>
+
+        <div class="slider-wrap">
+          <label>Confidence: <span class="slider-val" id="confVal">0.80</span></label>
+          <input type="range" min="0" max="1" step="0.05" value="0.80" oninput="document.getElementById('confVal').textContent=parseFloat(this.value).toFixed(2)" id="confSlider"/>
+        </div>
+
+        <label>Reasoning <span style="font-weight:400;color:#a0aec0">(min 30 chars)</span></label>
+        <textarea id="reasoningInput" placeholder="Explain your triage decision, referencing specific metrics and trends..." rows="4"></textarea>
+
+        <button class="btn btn-primary" id="submitBtn" onclick="submitTriage()" style="width:100%;margin-top:16px;justify-content:center">Submit Triage</button>
+        <div id="triageAlert"></div>
+      </div>
+
+      <div id="triageResult"></div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════ FEATURES ═══════════════════════════════════════ -->
+<section style="background:#fff">
+<div class="container">
+  <h2 class="section-title">✨ Key Features</h2>
+  <p class="section-sub">What makes this environment hard — and useful for evaluating agents.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="feature-icon">💥</div>
+      <h3>Cascading Failures</h3>
+      <p>Mis-triaging hard scenarios triggers follow-up alerts — just like production. DB pool exhaustion leads to payment API crash. DNS failure causes total platform outage.</p>
+      <span class="penalty-tag">−0.20 penalty per cascade</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📈</div>
+      <h3>Time-Series Metrics</h3>
+      <p>Each metric is a 5-point time series (last 5 minutes). Agents must distinguish trends (memory leak: 60% → 78%) from transient spikes.</p>
+      <span class="bonus-tag">+0.05 trend analysis bonus</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🐺</div>
+      <h3>False Positive Detection</h3>
+      <p>3 "boy who cried wolf" scenarios — nightly backups, staging load tests, canary deployments. High metrics that are expected behavior.</p>
+      <span class="bonus-tag">+0.10 bonus for correct low-priority triage</span>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🎯</div>
+      <h3>Expert Team Routing</h3>
+      <p>Each scenario has an optimal team + alternative teams. Routing to an alt team earns partial credit (0.15 vs 0.30). Wrong team = 0.0.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔄</div>
+      <h3>Multi-Step Episodes</h3>
+      <p>Max 2 attempts per episode. After step 1, agents see consequence observations. Agents that adapt their answer based on feedback earn a bonus.</p>
+      <span class="bonus-tag">+0.05 adaptation bonus</span>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════ SCORING ═══════════════════════════════════════ -->
+<section>
+<div class="container">
+  <h2 class="section-title">📊 Scoring Rubric</h2>
+  <p class="section-sub">Every triage decision is graded across 5 dimensions. Final score capped at [0.0, 1.0].</p>
+  <div class="card card-shadow" style="overflow:hidden">
+    <table class="rubric-table">
+      <thead>
+        <tr><th>Dimension</th><th>Max</th><th>Rule</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><strong>Severity</strong></td><td class="weight">0.35</td><td>Exact match = 0.35 · Off-by-one = 0.15 · Else = 0.0</td></tr>
+        <tr><td><strong>Team Routing</strong></td><td class="weight">0.30</td><td>Optimal team = 0.30 · Alt team = 0.15 · Else = 0.0</td></tr>
+        <tr><td><strong>Escalation</strong></td><td class="weight">0.15</td><td>Exact match only</td></tr>
+        <tr><td><strong>Reasoning</strong></td><td class="weight">0.10</td><td>+0.05 if &gt;30 chars · +0.05 for key indicator mentions</td></tr>
+        <tr><td><strong>Calibration</strong></td><td class="weight">0.10</td><td>High confidence when correct · Low confidence when wrong</td></tr>
+        <tr><td colspan="3" style="padding:4px;background:#edf2f7"></td></tr>
+        <tr><td><strong>Trend Analysis Bonus</strong></td><td class="bonus">+0.05</td><td>Reasoning references metric trends (increasing, trending, etc.)</td></tr>
+        <tr><td><strong>False Positive Bonus</strong></td><td class="bonus">+0.10</td><td>Correct P3/P4 triage on false-positive scenarios</td></tr>
+        <tr><td><strong>Adaptation Bonus</strong></td><td class="bonus">+0.05</td><td>Improvement from step 1 → step 2 after feedback</td></tr>
+        <tr><td><strong>Cascade Penalty</strong></td><td class="penalty">−0.20</td><td>Per cascading failure triggered by wrong triage</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════ FILES ═══════════════════════════════════════ -->
+<section style="background:#fff">
+<div class="container">
+  <h2 class="section-title">📁 Project Files</h2>
+  <p class="section-sub">All source files in the repository.</p>
+  <div class="file-tree">
+    <div class="tree-header">./</div>
+    <div class="file-row"><span class="file-name">app.py</span><span class="file-desc">Flask REST API — /health, /reset, /step, /analyze, /state, /consequences</span></div>
+    <div class="file-row"><span class="file-name">environment.py</span><span class="file-desc">Core grading engine — cascading failures, bonuses, multi-step episodes</span></div>
+    <div class="file-row"><span class="file-name">models.py</span><span class="file-desc">Pydantic v2 data contracts — TriageObservation, TriageAction, TriageReward</span></div>
+    <div class="file-row"><span class="file-name">data.py</span><span class="file-desc">18 incident scenario definitions across 4 difficulty tiers</span></div>
+    <div class="file-row"><span class="file-name">analytics.py</span><span class="file-desc">Agent performance analytics — strengths, weaknesses, learning patterns</span></div>
+    <div class="file-row"><span class="file-name">consequences.py</span><span class="file-desc">Realistic incident consequence timelines for correct vs wrong decisions</span></div>
+    <div class="file-row"><span class="file-name">inference.py</span><span class="file-desc">LLM baseline agent — OpenAI and Google Gemini via OpenAI-compatible endpoints</span></div>
+    <div class="file-row"><span class="file-name">test_agent.py</span><span class="file-desc">Deterministic mock agent with hardcoded optimal decisions (no LLM needed)</span></div>
+    <div class="file-row"><span class="file-name">test_verify.py</span><span class="file-desc">10 feature verification tests — cascades, bonuses, multi-step, false positives</span></div>
+    <div class="file-row"><span class="file-name">test_api.py</span><span class="file-desc">HTTP API integration tests for all endpoints</span></div>
+    <div class="file-row"><span class="file-name">openenv.yaml</span><span class="file-desc">OpenEnv specification v2.0.0 — schemas, rubric, features, endpoints</span></div>
+    <div class="file-row"><span class="file-name">requirements.txt</span><span class="file-desc">Python dependencies — flask, pydantic, openai</span></div>
+    <div class="file-row"><span class="file-name">Dockerfile</span><span class="file-desc">Production container — python:3.11-slim, port 5000</span></div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════ API REFERENCE ═══════════════════════════════════════ -->
+<section>
+<div class="container">
+  <h2 class="section-title">📡 API Reference</h2>
+  <p class="section-sub">All endpoints available on the live Space.</p>
+  <div class="api-grid">
+    <div class="api-card">
+      <div class="api-card-header">
+        <span class="method get">GET</span>
+        <span class="api-path">/health</span>
+        <span class="api-desc">Liveness check</span>
+      </div>
+      <div class="api-card-body">
+        <pre>curl https://deverguy-incident-response-triage.hf.space/health
+# {"status": "ok"}</pre>
+      </div>
+    </div>
+    <div class="api-card">
+      <div class="api-card-header">
+        <span class="method post">POST</span>
+        <span class="api-path">/reset</span>
+        <span class="api-desc">Start a new episode</span>
+      </div>
+      <div class="api-card-body">
+        <pre>curl -X POST https://deverguy-incident-response-triage.hf.space/reset \
+  -H "Content-Type: application/json" \
+  -d '{"task_id": "hard-1", "seed": 42}'</pre>
+      </div>
+    </div>
+    <div class="api-card">
+      <div class="api-card-header">
+        <span class="method post">POST</span>
+        <span class="api-path">/step</span>
+        <span class="api-desc">Submit triage action</span>
+      </div>
+      <div class="api-card-body">
+        <pre>curl -X POST https://deverguy-incident-response-triage.hf.space/step \
+  -H "Content-Type: application/json" \
+  -d '{"severity":"P2","team":"database","escalate":false,"confidence":0.9,"reasoning":"Disk at 95%, trending upward"}'</pre>
+      </div>
+    </div>
+    <div class="api-card">
+      <div class="api-card-header">
+        <span class="method post">POST</span>
+        <span class="api-path">/analyze</span>
+        <span class="api-desc">Agent performance analytics</span>
+      </div>
+      <div class="api-card-body">
+        <pre>curl -X POST https://deverguy-incident-response-triage.hf.space/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"agent_name": "gpt-4", "results": [...]}'</pre>
+      </div>
+    </div>
+    <div class="api-card">
+      <div class="api-card-header">
+        <span class="method get">GET</span>
+        <span class="api-path">/consequences/&lt;task_id&gt;</span>
+        <span class="api-desc">Incident consequence timelines</span>
+      </div>
+      <div class="api-card-body">
+        <pre>curl https://deverguy-incident-response-triage.hf.space/consequences/easy-1</pre>
+      </div>
+    </div>
+    <div class="api-card">
+      <div class="api-card-header">
+        <span class="method get">GET</span>
+        <span class="api-path">/state</span>
+        <span class="api-desc">Current environment state</span>
+      </div>
+      <div class="api-card-body">
+        <pre>curl https://deverguy-incident-response-triage.hf.space/state</pre>
+      </div>
+    </div>
+  </div>
+</div>
+</section>
+
+<!-- ═══════════════════════════════════════ FOOTER ═══════════════════════════════════════ -->
+<footer>
+  <p>Built for the <strong style="color:#fc8181">OpenEnv Competition</strong> — testing AI agents on real-world SRE incident triage.</p>
+  <p style="margin-top:8px">
+    <a href="https://huggingface.co/spaces/DeverGuy/incident-response-triage">🤗 HuggingFace Space</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/devhemanthac-commits/Incident-Response-Triage-OpenENV-Environment">GitHub</a>
+  </p>
+</footer>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────────
+let selectedSeverity = 'P2';
+let selectedTeam = 'database';
+let escalate = true;
+let sessionLoaded = false;
+
+// ── Health check ───────────────────────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const r = await fetch('/health');
+    const d = await r.json();
+    if (d.status === 'ok') {
+      document.getElementById('healthDot').className = 'health-dot green';
+      document.getElementById('healthText').textContent = 'API is live';
+    } else { throw new Error(); }
+  } catch {
+    document.getElementById('healthDot').className = 'health-dot red';
+    document.getElementById('healthText').textContent = 'API unreachable';
+  }
+}
+checkHealth();
+
+// ── Pill helpers ───────────────────────────────────────────────────────────
+function setSeverity(val) {
+  selectedSeverity = val;
+  document.querySelectorAll('#severityGroup .pill').forEach(b => {
+    b.classList.toggle('active', b.textContent.startsWith(val));
+  });
+}
+
+function setTeam(val) {
+  selectedTeam = val;
+  document.querySelectorAll('#teamGroup .pill').forEach(b => {
+    b.classList.toggle('active', b.textContent === val);
+  });
+}
+
+function setEscalate(val) {
+  escalate = val;
+  document.getElementById('escYes').classList.toggle('active', val);
+  document.getElementById('escNo').classList.toggle('active', !val);
+}
+
+// ── Score card renderer ────────────────────────────────────────────────────
+function renderScoreCard(reward, incidentId, containerId) {
+  const score = reward.score ?? reward;
+  const pct = n => Math.round(Math.min(n / 0.35 * 100, 100));
+  const dims = [
+    {label:'Severity',   val: reward.severity_score,   max:0.35},
+    {label:'Routing',    val: reward.routing_score,     max:0.30},
+    {label:'Escalation', val: reward.escalation_score,  max:0.15},
+    {label:'Reasoning',  val: reward.reasoning_score,   max:0.10},
+    {label:'Calibration',val: reward.calibration_score, max:0.10},
+  ];
+  const color = score >= 0.9 ? '#48bb78' : score >= 0.7 ? '#ed8936' : '#fc8181';
+  const barsHtml = dims.map(d => {
+    if (d.val === undefined) return '';
+    const pct = d.max > 0 ? Math.round(d.val / d.max * 100) : 0;
+    return `<div class="dim-row">
+      <span class="dim-label">${d.label}</span>
+      <div class="dim-bar-bg"><div class="dim-bar" style="width:${pct}%;background:${color}"></div></div>
+      <span class="dim-val">${d.val !== undefined ? d.val.toFixed(2) : '—'}</span>
+    </div>`;
+  }).join('');
+  const bonuses = [];
+  if (reward.trend_bonus > 0) bonuses.push(`Trend +${reward.trend_bonus.toFixed(2)}`);
+  if (reward.false_positive_bonus > 0) bonuses.push(`FP Bonus +${reward.false_positive_bonus.toFixed(2)}`);
+  if (reward.adaptation_bonus > 0) bonuses.push(`Adapt +${reward.adaptation_bonus.toFixed(2)}`);
+  if (reward.cascade_penalty < 0) bonuses.push(`Cascade ${reward.cascade_penalty.toFixed(2)}`);
+
+  document.getElementById(containerId).innerHTML = `
+    <div class="score-card card-shadow">
+      <div class="score-header">
+        <span class="incident">${incidentId || ''}</span>
+        <span class="total" style="color:${color}">${score.toFixed(3)}</span>
+      </div>
+      <div class="score-body">
+        ${barsHtml}
+        ${bonuses.length ? `<div style="font-size:0.78rem;color:#718096;margin-top:6px">${bonuses.join(' · ')}</div>` : ''}
+        ${reward.feedback ? `<div class="feedback-box">${reward.feedback}</div>` : ''}
+      </div>
+    </div>`;
+}
+
+// ── Quick Demo ─────────────────────────────────────────────────────────────
+async function runDemo() {
+  const btn = document.getElementById('demoBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+  document.getElementById('demoResult').innerHTML = '<div class="placeholder-card"><span class="spinner" style="border-color:rgba(0,0,0,0.15);border-top-color:#e74c3c;width:24px;height:24px"></span></div>';
+
+  try {
+    await fetch('/reset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({task_id:'easy-1',seed:42})});
+    const r = await fetch('/step', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        severity:'P2', team:'database', escalate:false, confidence:0.9,
+        reasoning:'Disk at 95% on postgres-primary, trending upward from 88% — database team should expand storage immediately'
+      })
+    });
+    const d = await r.json();
+    const reward = d.done ? d.reward : d.reward;
+    renderScoreCard(reward, 'INC-0001 · easy-1', 'demoResult');
+  } catch(e) {
+    document.getElementById('demoResult').innerHTML = `<div class="alert error">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '▶ Run Demo';
+}
+
+// ── Load Scenario ──────────────────────────────────────────────────────────
+async function loadScenario() {
+  const taskId = document.getElementById('scenarioPicker').value;
+  const btn = document.getElementById('loadBtn');
+  btn.disabled = true;
+  btn.textContent = 'Loading...';
+  document.getElementById('obsPanel').innerHTML = '<div class="obs-placeholder"><span class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:#68d391;width:24px;height:24px"></span></div>';
+  document.getElementById('triageResult').innerHTML = '';
+  document.getElementById('triageAlert').innerHTML = '';
+
+  try {
+    const r = await fetch('/reset', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({task_id:taskId, seed:42})});
+    const obs = await r.json();
+    if (obs.error) throw new Error(obs.error);
+    sessionLoaded = true;
+    renderObservation(obs);
+  } catch(e) {
+    document.getElementById('obsPanel').innerHTML = `<div class="alert error">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.textContent = 'Load Scenario →';
+}
+
+function renderObservation(obs) {
+  const m = obs.metrics || {};
+  const ts = (m.timestamps || ['T-4','T-3','T-2','T-1','T-now']).join(' → ');
+  const metricRows = [
+    ['CPU %', m.cpu_percent],
+    ['Memory %', m.memory_percent],
+    ['Error Rate', m.error_rate],
+    ['Latency p99', m.latency_p99_ms],
+    ['Disk %', m.disk_percent],
+    ['Connections', m.connections_active],
+  ].filter(([,v]) => v).map(([k,v]) =>
+    `<tr><th>${k}</th>${v.map(x=>`<td>${x}</td>`).join('')}</tr>`
+  ).join('');
+
+  const deps = (obs.service_dependencies || []).join(', ') || '—';
+  const alerts = (obs.related_alerts || []).join('<br>') || '—';
+  const deploys = (obs.recent_deployments || []).length ? JSON.stringify(obs.recent_deployments[0]) : 'None';
+
+  document.getElementById('obsPanel').innerHTML = `
+    <div class="obs-card">
+      <div class="obs-title">📡 Observation · ${obs.task_id} · Step ${obs.step_number}</div>
+      <div class="obs-field"><strong>Incident</strong><div class="val">${obs.incident_id}</div></div>
+      <div class="obs-field"><strong>Alert Type</strong><div class="val">${obs.alert_type}</div></div>
+      <div class="obs-field"><strong>Service</strong><div class="val">${obs.service_name}</div></div>
+      <div class="obs-field"><strong>Error</strong><div class="val" style="color:#fc8181">${obs.error_message}</div></div>
+      <div class="obs-field">
+        <strong>Metrics (${ts})</strong>
+        <table class="metrics-table"><tbody>${metricRows}</tbody></table>
+      </div>
+      <div class="obs-field"><strong>Logs</strong><pre class="logs-pre">${obs.logs_snippet || ''}</pre></div>
+      <div class="obs-field"><strong>Related Alerts</strong><div class="val">${alerts}</div></div>
+      <div class="obs-field"><strong>Dependencies</strong><div class="val">${deps}</div></div>
+      <div class="obs-field"><strong>Recent Deploys</strong><div class="val">${deploys}</div></div>
+    </div>`;
+}
+
+// ── Submit Triage ──────────────────────────────────────────────────────────
+async function submitTriage() {
+  const alertEl = document.getElementById('triageAlert');
+  alertEl.innerHTML = '';
+  if (!sessionLoaded) {
+    alertEl.innerHTML = '<div class="alert error">Load a scenario first.</div>';
+    return;
+  }
+  const reasoning = document.getElementById('reasoningInput').value.trim();
+  if (reasoning.length < 30) {
+    alertEl.innerHTML = '<div class="alert error">Reasoning must be at least 30 characters.</div>';
+    return;
+  }
+  const confidence = parseFloat(document.getElementById('confSlider').value);
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Grading...';
+  document.getElementById('triageResult').innerHTML = '';
+
+  try {
+    const r = await fetch('/step', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({severity:selectedSeverity, team:selectedTeam, escalate, confidence, reasoning})
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    const taskId = document.getElementById('scenarioPicker').value;
+    renderTriageResult(d, taskId);
+  } catch(e) {
+    alertEl.innerHTML = `<div class="alert error">Error: ${e.message}</div>`;
+  }
+  btn.disabled = false;
+  btn.innerHTML = 'Submit Triage';
+}
+
+function renderTriageResult(d, taskId) {
+  const reward = d.reward;
+  const score = reward.score;
+  const color = score >= 0.9 ? '#48bb78' : score >= 0.7 ? '#ed8936' : '#fc8181';
+  const dims = reward.severity_score !== undefined ? [
+    {label:'Severity',   val: reward.severity_score},
+    {label:'Routing',    val: reward.routing_score},
+    {label:'Escalation', val: reward.escalation_score},
+    {label:'Reasoning',  val: reward.reasoning_score},
+    {label:'Calibration',val: reward.calibration_score},
+  ] : [];
+  const maxes = [0.35,0.30,0.15,0.10,0.10];
+  const barsHtml = dims.map((d,i) => {
+    const pct = Math.round(d.val / maxes[i] * 100);
+    return `<div class="dim-row">
+      <span class="dim-label">${d.label}</span>
+      <div class="dim-bar-bg"><div class="dim-bar" style="width:${pct}%;background:${color}"></div></div>
+      <span class="dim-val">${d.val.toFixed(2)}</span>
+    </div>`;
+  }).join('');
+
+  const signals = (reward.learning_signals || []).map(s =>
+    `<li style="margin-bottom:6px"><span style="color:${s.correct?'#48bb78':'#fc8181'}">${s.correct?'✓':'✗'}</span> <strong>${s.dimension}:</strong> ${s.reason}${s.improvement_hint ? `<br><span style="color:#718096;font-size:0.8rem">💡 ${s.improvement_hint}</span>` : ''}</li>`
+  ).join('');
+
+  const groundTruth = d.done && d.info ? `
+    <div style="margin-top:14px;padding:12px;background:#ebf8ff;border-radius:8px;font-size:0.83rem">
+      <strong style="color:#2b6cb0">Ground Truth:</strong>
+      Severity <strong>${d.info.expected_severity}</strong> ·
+      Team <strong>${d.info.expected_team}</strong> ·
+      Escalate <strong>${d.info.expected_escalate}</strong>
+    </div>` : '';
+
+  document.getElementById('triageResult').innerHTML = `
+    <div class="result-card card-shadow" style="margin-top:20px">
+      <div class="score-header">
+        <span class="incident">${taskId} · Attempt ${d.info?.attempt||1}</span>
+        <span class="total" style="color:${color}">${score.toFixed(3)}</span>
+      </div>
+      <div class="score-body">
+        ${barsHtml}
+        ${reward.feedback ? `<div class="feedback-box">${reward.feedback}</div>` : ''}
+        ${signals ? `<ul style="margin-top:14px;padding-left:0;list-style:none;font-size:0.83rem">${signals}</ul>` : ''}
+        ${groundTruth}
+        ${!d.done ? `<div style="margin-top:12px;padding:10px;background:#fffbeb;border-radius:8px;font-size:0.83rem;color:#744210">🔄 You have one more attempt — load the same scenario and try again with the feedback above.</div>` : ''}
+      </div>
+    </div>`;
+
+  if (d.done) sessionLoaded = false;
+}
+</script>
+</body>
+</html>
