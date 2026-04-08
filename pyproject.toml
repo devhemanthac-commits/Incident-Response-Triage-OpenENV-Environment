@@ -10,10 +10,11 @@ requires-python = ">=3.11"
 dependencies = [
     "pydantic>=2.0,<3.0",
     "flask>=3.0,<4.0",
-    "openai>=1.0,<2.0",
+    "openai>=2.7.2",
     "pyyaml>=6.0",
     "requests>=2.31",
+    "openenv-core>=0.2.0",
 ]
 
 [project.scripts]
-serve = "app:app"
+server = "server.app:main"
