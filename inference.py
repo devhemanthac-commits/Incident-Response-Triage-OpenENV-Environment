@@ -12,6 +12,7 @@ import os
 import random
 import re
 import sys
+import time
 from typing import Any
 
 import requests
@@ -58,15 +59,36 @@ def _log(*args: Any) -> None:
     print(*args, file=sys.stderr, flush=True)
 
 
+def _request_with_retry(method: str, url: str, max_retries: int = 5, **kwargs) -> requests.Response:
+    """POST/GET with exponential backoff for transient failures."""
+    delay = 1.0
+    last_exc: Exception | None = None
+    for attempt in range(max_retries):
+        try:
+            resp = requests.request(method, url, timeout=30, **kwargs)
+            if resp.status_code < 500:
+                resp.raise_for_status()
+                return resp
+            # 5xx — server-side transient error, retry
+            _log(f"    Server error {resp.status_code} on {url} (attempt {attempt + 1}/{max_retries}), retrying in {delay:.1f}s…")
+            _log(f"    Response body: {resp.text[:200]}")
+        except requests.exceptions.ConnectionError as exc:
+            _log(f"    Connection error on {url} (attempt {attempt + 1}/{max_retries}), retrying in {delay:.1f}s…")
+            last_exc = exc
+        except requests.exceptions.HTTPError:
+            raise  # 4xx are not retryable
+        time.sleep(delay)
+        delay = min(delay * 2, 30)
+    raise RuntimeError(f"Failed after {max_retries} attempts: {url}") from last_exc
+
+
 def _reset(task_id: str) -> dict:
-    resp = requests.post(f"{API_BASE_URL}/reset", json={"task_id": task_id}, timeout=10)
-    resp.raise_for_status()
+    resp = _request_with_retry("POST", f"{API_BASE_URL}/reset", json={"task_id": task_id})
     return resp.json()
 
 
 def _step(action: dict) -> dict:
-    resp = requests.post(f"{API_BASE_URL}/step", json=action, timeout=10)
-    resp.raise_for_status()
+    resp = _request_with_retry("POST", f"{API_BASE_URL}/step", json=action)
     return resp.json()
 
 
@@ -80,17 +102,19 @@ def _format_metrics_timeseries(metrics: dict) -> str:
         if key == "timestamps":
             continue
         if isinstance(values, list):
-            formatted = "  ".join(f"{v:7.1f}" for v in values)
+            try:
+                formatted = "  ".join(f"{float(v):7.1f}" for v in values)
+            except (TypeError, ValueError):
+                formatted = "  ".join(f"{str(v):>7}" for v in values)
             # Add trend indicator
-            if len(values) >= 2:
-                diff = values[-1] - values[0]
-                if diff > 5:
-                    trend = " ▲"
-                elif diff < -5:
-                    trend = " ▼"
+            try:
+                numeric = [float(v) for v in values]
+                if len(numeric) >= 2:
+                    diff = numeric[-1] - numeric[0]
+                    trend = " ▲" if diff > 5 else (" ▼" if diff < -5 else " ─")
                 else:
-                    trend = " ─"
-            else:
+                    trend = ""
+            except (TypeError, ValueError):
                 trend = ""
             lines.append(f"  {key:<22} {formatted}{trend}")
         else:
@@ -107,7 +131,7 @@ def _format_observation(obs: dict) -> str:
     deployments = obs.get("recent_deployments", [])
     deploy_str = (
         "; ".join(
-            f"{d['service']} {d['version']} by {d['author']} at {d['timestamp']}"
+            f"{d.get('service','?')} {d.get('version','?')} by {d.get('author','?')} at {d.get('timestamp','?')}"
             for d in deployments
         )
         if deployments
@@ -117,16 +141,16 @@ def _format_observation(obs: dict) -> str:
     new_alert = obs.get("new_alert", "")
 
     lines = [
-        f"=== INCIDENT {obs['incident_id']} (attempt {obs['step_number']}) ===",
-        f"Alert type   : {obs['alert_type']}",
-        f"Service      : {obs['service_name']}",
-        f"Error        : {obs['error_message']}",
-        f"Time         : {obs['time_of_day']}",
+        f"=== INCIDENT {obs.get('incident_id', 'UNKNOWN')} (attempt {obs.get('step_number', '?')}) ===",
+        f"Alert type   : {obs.get('alert_type', 'unknown')}",
+        f"Service      : {obs.get('service_name', 'unknown')}",
+        f"Error        : {obs.get('error_message', 'unknown')}",
+        f"Time         : {obs.get('time_of_day', 'unknown')}",
         f"Related alerts: {alerts}",
         f"Dependencies : {deps}",
         f"Recent deploys: {deploy_str}",
         f"\nMetrics (last 5 minutes — analyze trends):\n{metrics_str}",
-        f"\nLogs:\n{obs['logs_snippet']}",
+        f"\nLogs:\n{obs.get('logs_snippet', '')}",
     ]
     if new_alert:
         lines.append(f"\n⚠️ NEW CASCADING ALERT: {new_alert}")
@@ -221,15 +245,20 @@ def _format_learning_signals(reward: dict) -> str:
     return "\n".join(lines)
 
 
+MAX_STEPS_PER_EPISODE = 10  # safety cap; environment typically uses 2
+
+
 def run_episode(client: OpenAI, task_id: str) -> dict:
-    """Run one episode (up to MAX_ATTEMPTS steps) for a single task_id."""
+    """Run one episode (up to MAX_STEPS_PER_EPISODE steps) for a single task_id."""
     _log(f"  [episode] task_id={task_id}")
     obs = _reset(task_id)
-    episode_reward = None
+    episode_reward: dict = {"score": 0.0}
     done = False
     prev_reward = None  # track step-1 reward for learning signal injection
+    steps = 0
 
-    while not done:
+    while not done and steps < MAX_STEPS_PER_EPISODE:
+        steps += 1
         prompt = _format_observation(obs)
 
         # On step 2+, inject structured learning signals from previous attempt
@@ -253,12 +282,12 @@ def run_episode(client: OpenAI, task_id: str) -> dict:
             }
 
         result = _step(action)
-        obs = result["observation"]
-        episode_reward = result["reward"]
-        done = result["done"]
+        obs = result.get("observation") or {}
+        episode_reward = result.get("reward") or {"score": 0.0}
+        done = result.get("done", True)
         prev_reward = episode_reward  # save for next step's learning context
 
-        _log(f"    score={episode_reward['score']:.3f} done={done}")
+        _log(f"    score={episode_reward.get('score', 0.0):.3f} done={done}")
         if result.get("info", {}).get("cascade_triggered"):
             _log(f"    CASCADE TRIGGERED — penalty applied")
 
@@ -280,31 +309,48 @@ def main() -> None:
     print("[START]", flush=True)
 
     all_results = []
-    for task_name, task_ids in zip(TASK_NAMES, TASK_IDS):
-        _log(f"\n=== Task group: {task_name} ===")
-        group_scores = []
-        for task_id in task_ids:
-            result = run_episode(client, task_id)
-            score = result["reward"]["score"]
-            group_scores.append(score)
+    try:
+        for task_name, task_ids in zip(TASK_NAMES, TASK_IDS):
+            _log(f"\n=== Task group: {task_name} ===")
+            group_scores = []
+            for task_id in task_ids:
+                try:
+                    result = run_episode(client, task_id)
+                except Exception as exc:
+                    _log(f"    ERROR in task {task_id}: {exc}")
+                    result = {
+                        "task_id": task_id,
+                        "reward": {
+                            "score": 0.0,
+                            "severity_score": 0.0,
+                            "routing_score": 0.0,
+                            "escalation_score": 0.0,
+                            "cascade_penalty": 0.0,
+                            "false_positive_bonus": 0.0,
+                            "trend_bonus": 0.0,
+                        },
+                    }
+                score = result["reward"].get("score", 0.0)
+                group_scores.append(score)
 
-            print(
-                f"[STEP] task_id={task_id} score={score:.3f} "
-                f"severity={result['reward'].get('severity_score', 0):.2f} "
-                f"routing={result['reward'].get('routing_score', 0):.2f} "
-                f"escalation={result['reward'].get('escalation_score', 0):.2f} "
-                f"cascade={result['reward'].get('cascade_penalty', 0):.2f} "
-                f"fp_bonus={result['reward'].get('false_positive_bonus', 0):.2f} "
-                f"trend={result['reward'].get('trend_bonus', 0):.2f}",
-                flush=True,
-            )
-            all_results.append(result)
+                print(
+                    f"[STEP] task_id={task_id} score={score:.3f} "
+                    f"severity={result['reward'].get('severity_score', 0):.2f} "
+                    f"routing={result['reward'].get('routing_score', 0):.2f} "
+                    f"escalation={result['reward'].get('escalation_score', 0):.2f} "
+                    f"cascade={result['reward'].get('cascade_penalty', 0):.2f} "
+                    f"fp_bonus={result['reward'].get('false_positive_bonus', 0):.2f} "
+                    f"trend={result['reward'].get('trend_bonus', 0):.2f}",
+                    flush=True,
+                )
+                all_results.append(result)
 
-        avg = sum(group_scores) / len(group_scores)
-        _log(f"  group avg: {avg:.3f}")
-
-    overall = sum(r["reward"]["score"] for r in all_results) / len(all_results)
-    print(f"[END] overall_avg={overall:.4f} episodes={len(all_results)}", flush=True)
+            avg = sum(group_scores) / len(group_scores) if group_scores else 0.0
+            _log(f"  group avg: {avg:.3f}")
+    finally:
+        episodes = len(all_results)
+        overall = sum(r["reward"].get("score", 0.0) for r in all_results) / episodes if episodes else 0.0
+        print(f"[END] overall_avg={overall:.4f} episodes={episodes}", flush=True)
 
 
 if __name__ == "__main__":
