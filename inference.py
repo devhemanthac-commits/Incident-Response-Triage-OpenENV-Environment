@@ -82,6 +82,24 @@ def _request_with_retry(method: str, url: str, max_retries: int = 5, **kwargs) -
     raise RuntimeError(f"Failed after {max_retries} attempts: {url}") from last_exc
 
 
+def _wait_for_server(timeout: int = 60) -> None:
+    """Block until the API server responds or timeout (seconds) elapses."""
+    deadline = time.time() + timeout
+    delay = 1.0
+    while time.time() < deadline:
+        try:
+            resp = requests.get(f"{API_BASE_URL}/", timeout=5)
+            if resp.status_code < 500:
+                _log(f"  API server ready (status {resp.status_code})")
+                return
+        except requests.exceptions.RequestException:
+            pass
+        _log(f"  Waiting for API server… (retrying in {delay:.0f}s)")
+        time.sleep(delay)
+        delay = min(delay * 2, 10)
+    raise RuntimeError(f"API server at {API_BASE_URL} not reachable after {timeout}s")
+
+
 def _reset(task_id: str) -> dict:
     resp = _request_with_retry("POST", f"{API_BASE_URL}/reset", json={"task_id": task_id})
     return resp.json()
@@ -296,16 +314,22 @@ def run_episode(client: OpenAI, task_id: str) -> dict:
 
 def main() -> None:
     global MODEL_NAME
-    if GEMINI_API_KEY:
-        client = OpenAI(
-            api_key=GEMINI_API_KEY,
-            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-        )
-        if MODEL_NAME == "gpt-4o-mini":
-            MODEL_NAME = "gemini-2.5-flash"
-    else:
-        client = OpenAI(api_key=OPENAI_API_KEY)
+    try:
+        if GEMINI_API_KEY:
+            client = OpenAI(
+                api_key=GEMINI_API_KEY,
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            )
+            if MODEL_NAME == "gpt-4o-mini":
+                MODEL_NAME = "gemini-2.5-flash"
+        else:
+            client = OpenAI(api_key=OPENAI_API_KEY)
+    except Exception as exc:
+        _log(f"ERROR: failed to initialise LLM client: {exc}")
+        print("[END] overall_avg=0.0000 episodes=0", flush=True)
+        sys.exit(1)
 
+    _wait_for_server()
     print("[START]", flush=True)
 
     all_results = []
@@ -354,4 +378,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as exc:
+        _log(f"FATAL: {exc}")
+        print("[END] overall_avg=0.0000 episodes=0", flush=True)
+        sys.exit(1)
