@@ -88,8 +88,8 @@ def _wait_for_server(timeout: int = 60) -> None:
     delay = 1.0
     while time.time() < deadline:
         try:
-            resp = requests.get(f"{API_BASE_URL}/", timeout=5)
-            if resp.status_code < 500:
+            resp = requests.get(f"{API_BASE_URL}/health", timeout=5)
+            if resp.status_code == 200:
                 _log(f"  API server ready (status {resp.status_code})")
                 return
         except requests.exceptions.RequestException:

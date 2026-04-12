@@ -49,6 +49,8 @@ def reset():
         obs = env.reset(task_id=task_id, seed=seed)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": f"Internal error during reset: {exc}"}), 500
     return jsonify(obs.model_dump())
 
 
@@ -67,6 +69,8 @@ def step():
         obs, reward, done, info = env.step(action)
     except RuntimeError as exc:
         return jsonify({"error": str(exc)}), 400
+    except Exception as exc:
+        return jsonify({"error": f"Internal error during step: {exc}"}), 500
 
     # BUG 1 FIX: Only expose ground truth AFTER episode is done
     safe_info = {
